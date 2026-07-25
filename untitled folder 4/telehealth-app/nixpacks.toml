@@ -1,0 +1,15 @@
+# Railway / Nixpacks config for Sanavo
+[phases.setup]
+nixPkgs = ["nodejs_22", "python311", "gcc", "gnumake"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = [
+  "npx prisma generate",
+  "npm run build"
+]
+
+[start]
+cmd = "mkdir -p /data && DATABASE_URL=${DATABASE_URL:-file:/data/sanavo.db} npx prisma db push --accept-data-loss && npx next start -H 0.0.0.0 -p ${PORT:-3000}"
