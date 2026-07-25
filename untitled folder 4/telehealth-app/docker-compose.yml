@@ -1,6 +1,8 @@
 services:
   sanavo:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.vps
     ports:
       - "3000:3000"
     env_file:
