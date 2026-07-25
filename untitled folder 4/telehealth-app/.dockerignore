@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.env.production
+*.db
+*.db-journal
+data
+README.md
+DEPLOY.md
+npm-debug.log*
+.DS_Store
