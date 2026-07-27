@@ -3,7 +3,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "mkdir -p /data && npx prisma db push --accept-data-loss && npx next start -H 0.0.0.0 -p $PORT"
+# IMPORTANT: do not override with a custom startCommand that runs prisma
+# without logging — Dockerfile CMD uses ./start.sh (verbose + timeout).
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
