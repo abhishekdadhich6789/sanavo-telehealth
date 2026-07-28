@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { getSessionCookieName } from "@/lib/auth/session";
+import { applySecurityHeaders } from "@/lib/security";
 
 function getSecret() {
   const secret = process.env.JWT_SECRET || "dev-secret-change-in-production";
@@ -24,38 +25,41 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const user = await getUserFromRequest(request);
 
+  let response: NextResponse = NextResponse.next();
+
   // Force password change before accessing partner portal
   if (pathname.startsWith("/doctor")) {
     if (!user) {
-      return NextResponse.redirect(new URL("/login?redirect=/doctor", request.url));
+      response = NextResponse.redirect(new URL("/login?redirect=/doctor", request.url));
+    } else if (user.role !== "doctor") {
+      response = NextResponse.redirect(new URL("/login?error=unauthorized", request.url));
+    } else if (user.mustChangePassword) {
+      response = NextResponse.redirect(new URL("/change-password", request.url));
     }
-    if (user.role !== "doctor") {
-      return NextResponse.redirect(new URL("/login?error=unauthorized", request.url));
-    }
-    if (user.mustChangePassword) {
-      return NextResponse.redirect(new URL("/change-password", request.url));
-    }
-  }
-
-  if (pathname.startsWith("/admin")) {
+  } else if (pathname.startsWith("/admin")) {
     if (!user) {
-      return NextResponse.redirect(new URL("/login?redirect=/admin", request.url));
+      response = NextResponse.redirect(new URL("/login?redirect=/admin", request.url));
+    } else if (user.role !== "admin") {
+      response = NextResponse.redirect(new URL("/login?error=unauthorized", request.url));
+    } else if (user.mustChangePassword) {
+      response = NextResponse.redirect(new URL("/change-password", request.url));
     }
-    if (user.role !== "admin") {
-      return NextResponse.redirect(new URL("/login?error=unauthorized", request.url));
-    }
-  }
-
-  // Change-password page requires login
-  if (pathname.startsWith("/change-password")) {
+  } else if (pathname.startsWith("/change-password")) {
     if (!user) {
-      return NextResponse.redirect(new URL("/login?redirect=/change-password", request.url));
+      response = NextResponse.redirect(
+        new URL("/login?redirect=/change-password", request.url)
+      );
     }
   }
 
-  return NextResponse.next();
+  return applySecurityHeaders(request, response);
 }
 
 export const config = {
-  matcher: ["/doctor/:path*", "/admin/:path*", "/change-password"],
+  matcher: [
+    /*
+     * Apply security headers to all routes except static assets.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

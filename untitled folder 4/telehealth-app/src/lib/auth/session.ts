@@ -15,8 +15,9 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
   assertProductionSecrets();
   return new SignJWT({ ...user })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("24h")
+    .setExpirationTime("12h")
     .setIssuedAt()
+    .setIssuer("sanavo")
     .sign(getSecret());
 }
 
@@ -42,4 +43,16 @@ export function getSessionCookieName() {
   return COOKIE_NAME;
 }
 
-export const SESSION_MAX_AGE = 60 * 60 * 24; // 24 hours
+export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 hours
+
+/** Cookie flags for session tokens (httpOnly + secure in production). */
+export function getSessionCookieOptions() {
+  const isProd = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true as const,
+    secure: isProd,
+    sameSite: "lax" as const,
+    maxAge: SESSION_MAX_AGE,
+    path: "/",
+  };
+}

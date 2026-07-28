@@ -5,16 +5,16 @@ import { validatePasswordStrength } from "@/lib/auth/password";
 import {
   createSessionToken,
   getSessionCookieName,
+  getSessionCookieOptions,
   getSessionUser,
-  SESSION_MAX_AGE,
 } from "@/lib/auth/session";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit({
     key: clientKey(request, "change-password"),
-    limit: 10,
-    windowMs: 60_000,
+    limit: 5,
+    windowMs: 15 * 60_000,
   });
   if (!limited.ok) {
     return NextResponse.json(
@@ -68,13 +68,7 @@ export async function POST(request: NextRequest) {
         mustChangePassword: false,
       });
 
-      response.cookies.set(getSessionCookieName(), token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: SESSION_MAX_AGE,
-        path: "/",
-      });
+      response.cookies.set(getSessionCookieName(), token, getSessionCookieOptions());
     }
 
     return response;
